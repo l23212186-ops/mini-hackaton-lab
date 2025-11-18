@@ -2,177 +2,160 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario | Hackatón Lab</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        /* Estilos básicos para las tablas */
-        .admin-content, .assistant-content, .auditor-content { padding-top: 20px; }
-        .data-table { margin-top: 20px; }
-    </style>
+    <title>Inventario Lab</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div id="navbar-container"></div>
 
     <div class="container mt-4">
-        <h1 class="mb-4">Gestión de Instrumentos de Laboratorio</h1>
+        <h1>Gestión de Laboratorio 🔬</h1>
         
-        <div id="content-area">
-            <div id="admin-content" class="admin-content" style="display: none;">
-                <p class="lead">Panel de Control Total (ADMIN)</p>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <a href="#" id="register-btn" class="btn btn-success w-100">⚙️ Registrar Nuevo Usuario</a>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <a href="#" id="excel-btn" class="btn btn-info w-100">📊 Importar/Exportar Excel</a>
-                    </div>
+        <div class="row mb-3 mt-4">
+            <div class="col-md-4">
+                <input type="text" id="live-search" class="form-control" placeholder="🔍 Buscar instrumento...">
+            </div>
+            <div class="col-md-8 text-end">
+                <button id="btn-new" class="btn btn-success" style="display:none;">+ Nuevo</button>
+                <button id="btn-download" class="btn btn-secondary">📥 Descargar Excel</button>
+                
+                <form id="upload-form" class="d-inline-block ms-2" style="display:none;">
+                    <input type="file" id="excel-file" name="fileExcel" accept=".xlsx" style="display:none;">
+                    <button type="button" class="btn btn-info" onclick="document.getElementById('excel-file').click()">📤 Subir Excel</button>
+                </form>
+            </div>
+        </div>
+
+        <table class="table table-hover table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th><th>Nombre</th><th>Categoría</th><th>Estado</th><th>Ubicación</th><th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+
+    <div class="modal fade" id="crudModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalTitle">Instrumento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="crud-form">
+                        <input type="hidden" id="inst-id">
+                        <div class="mb-2"><label>Nombre</label><input type="text" id="nombre" class="form-control" required></div>
+                        <div class="mb-2"><label>Categoría</label><input type="text" id="categoria" class="form-control" required></div>
+                        <div class="mb-2"><label>Estado</label>
+                            <select id="estado" class="form-select">
+                                <option>DISPONIBLE</option><option>PRESTADO</option><option>MANTENIMIENTO</option>
+                            </select>
+                        </div>
+                        <div class="mb-2"><label>Ubicación</label><input type="text" id="ubicacion" class="form-control"></div>
+                        <button type="submit" class="btn btn-primary w-100 mt-3">Guardar</button>
+                    </form>
                 </div>
             </div>
-
-            <div id="instrument-view" style="display: none;">
-                <div class="d-flex justify-content-between mb-3">
-                    <button id="new-instrument-btn" class="btn btn-primary" style="display:none;">+ Nuevo Instrumento</button>
-                    <input type="text" id="live-search-input" class="form-control w-25" placeholder="Buscar en vivo...">
-                    <button id="excel-download-btn" class="btn btn-secondary">Descargar Reporte</button>
-                </div>
-
-                <table class="table table-striped data-table">
-                    <thead class="bg-dark text-white">
-                        <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Categoría</th>
-                            <th>Estado</th>
-                            <th>Ubicación</th>
-                            <th id="actions-header" style="display:none;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="instrument-table-body">
-                        </tbody>
-                </table>
-            </div>
-            
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        fetch('navbar.html')
-            .then(response => response.text())
-            .then(data => {
-                document.getElementById('navbar-container').innerHTML = data;
-            });
-    </script>
-    
-    <script>
+        let crudModal;
+        const role = localStorage.getItem('userRole');
+
         document.addEventListener('DOMContentLoaded', () => {
-            const userRole = localStorage.getItem('userRole');
-            const menu = document.getElementById('main-menu');
-
-            // Si no hay rol, redirigir al login
-            if (!userRole) {
-                window.location.href = '/login.html';
-                return;
-            }
-
-            // Lógica de Menú y Contenido visible
-            const menuItems = [
-                { nombre: 'Inventario', url: '/' },
-                { nombre: 'Cerrar Sesión', url: '#', action: 'logout' }
-            ];
-
-            menuItems.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'nav-item';
-                const a = document.createElement('a');
-                a.className = 'nav-link';
-                a.textContent = item.nombre;
-                a.href = item.url;
-                if (item.action === 'logout') {
-                    a.addEventListener('click', handleLogout);
-                }
-                li.appendChild(a);
-                menu.appendChild(li);
-            });
-
-            // Mostrar contenido según el rol
-            const contentArea = document.getElementById('content-area');
-            const instrumentView = document.getElementById('instrument-view');
-            const newInstrumentBtn = document.getElementById('new-instrument-btn');
-            const actionsHeader = document.getElementById('actions-header');
-
-            instrumentView.style.display = 'block';
-            loadInstruments(); // Cargar la tabla para todos
-
-            if (userRole === 'ADMIN') {
-                document.getElementById('admin-content').style.display = 'block';
-                newInstrumentBtn.style.display = 'block';
-                actionsHeader.style.display = 'table-cell';
-
-            } else if (userRole === 'ASISTENTE') {
-                newInstrumentBtn.style.display = 'block';
-                actionsHeader.style.display = 'table-cell';
-
-            } else if (userRole === 'AUDITOR') {
-                // Solo lectura: la tabla es suficiente
-            }
-
-            // Funciones de utilidad
-            async function handleLogout(e) {
-                e.preventDefault();
-                try {
-                    await fetch('/api/auth/logout', { method: 'POST' });
-                    localStorage.removeItem('userRole');
-                    window.location.href = '/login.html';
-                } catch (error) {
-                    alert('Error al cerrar sesión. Intente de nuevo.');
-                }
-            }
-
-            async function loadInstruments(query = '') {
-                const url = query ? `/api/instrumentos/buscar?q=${query}` : '/api/instrumentos';
-                const response = await fetch(url);
-                const instruments = await response.json();
-                
-                const tableBody = document.getElementById('instrument-table-body');
-                tableBody.innerHTML = ''; 
-
-                instruments.forEach(instrument => {
-                    const row = tableBody.insertRow();
-                    row.insertCell().textContent = instrument.id;
-                    row.insertCell().textContent = instrument.nombre;
-                    row.insertCell().textContent = instrument.categoria;
-                    row.insertCell().textContent = instrument.estado;
-                    row.insertCell().textContent = instrument.ubicacion;
-
-                    // Columna de Acciones (CRUD)
-                    const actionsCell = row.insertCell();
-                    actionsCell.id = 'actions-cell';
-                    if (userRole === 'ADMIN' || userRole === 'ASISTENTE') {
-                        actionsCell.innerHTML = `
-                            <button class="btn btn-sm btn-warning me-2">Editar</button>
-                            <button class="btn btn-sm btn-danger" ${userRole !== 'ADMIN' ? 'disabled' : ''}>Eliminar</button>
-                        `;
-                    }
-                    if (userRole === 'ADMIN' || userRole === 'ASISTENTE') {
-                        actionsHeader.style.display = 'table-cell';
-                    }
-                });
-            }
-
-            // Lógica de Búsqueda en Vivo (Paso 70-90 min)
-            document.getElementById('live-search-input').addEventListener('keyup', (e) => {
-                loadInstruments(e.target.value);
-            });
+            if (!role) window.location.href = '/login.html';
             
-            // Lógica de Descarga de Excel
-            document.getElementById('excel-download-btn').addEventListener('click', () => {
-                // Simplemente redirigimos para iniciar la descarga del servidor
-                window.location.href = '/api/instrumentos/download';
-            });
+            // Cargar Navbar
+            fetch('navbar.html').then(r => r.text()).then(d => document.getElementById('navbar-container').innerHTML = d);
+            
+            crudModal = new bootstrap.Modal(document.getElementById('crudModal'));
+            loadData();
+
+            // Configurar botones según rol
+            if (role === 'ADMIN' || role === 'ASISTENTE') {
+                document.getElementById('btn-new').style.display = 'inline-block';
+            }
+            if (role === 'ADMIN') {
+                document.getElementById('upload-form').style.display = 'inline-block';
+            }
+
+            // Listeners
+            document.getElementById('btn-new').onclick = () => openModal();
+            document.getElementById('crud-form').onsubmit = saveInstrument;
+            document.getElementById('live-search').onkeyup = (e) => loadData(e.target.value);
+            document.getElementById('btn-download').onclick = () => window.location.href = '/api/instrumentos/download';
+            
+            // Subir Excel automático al seleccionar archivo
+            document.getElementById('excel-file').onchange = async (e) => {
+                const formData = new FormData();
+                formData.append('fileExcel', e.target.files[0]);
+                const res = await fetch('/api/instrumentos/upload', { method:'POST', body: formData });
+                if(res.ok) { alert('Cargado'); loadData(); } else alert('Error');
+            };
         });
+
+        async function loadData(q = '') {
+            const res = await fetch(q ? `/api/instrumentos/buscar?q=${q}` : '/api/instrumentos');
+            const data = await res.json();
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            
+            data.forEach(i => {
+                let btns = '';
+                if (role === 'ADMIN' || role === 'ASISTENTE') {
+                    btns += `<button class="btn btn-sm btn-warning me-1" onclick='openModal(${JSON.stringify(i)})'>✏️</button>`;
+                }
+                if (role === 'ADMIN') {
+                    btns += `<button class="btn btn-sm btn-danger" onclick="deleteInst(${i.id})">🗑️</button>`;
+                }
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${i.id}</td><td>${i.nombre}</td><td>${i.categoria}</td>
+                        <td><span class="badge bg-${i.estado==='DISPONIBLE'?'success':'warning'}">${i.estado}</span></td>
+                        <td>${i.ubicacion}</td><td>${btns}</td>
+                    </tr>`;
+            });
+        }
+
+        function openModal(data = null) {
+            document.getElementById('modalTitle').innerText = data ? 'Editar Instrumento' : 'Nuevo Instrumento';
+            document.getElementById('inst-id').value = data ? data.id : '';
+            document.getElementById('nombre').value = data ? data.nombre : '';
+            document.getElementById('categoria').value = data ? data.categoria : '';
+            document.getElementById('estado').value = data ? data.estado : 'DISPONIBLE';
+            document.getElementById('ubicacion').value = data ? data.ubicacion : '';
+            crudModal.show();
+        }
+
+        async function saveInstrument(e) {
+            e.preventDefault();
+            const id = document.getElementById('inst-id').value;
+            const body = JSON.stringify({
+                nombre: document.getElementById('nombre').value,
+                categoria: document.getElementById('categoria').value,
+                estado: document.getElementById('estado').value,
+                ubicacion: document.getElementById('ubicacion').value
+            });
+
+            const res = await fetch(id ? `/api/instrumentos/${id}` : '/api/instrumentos', {
+                method: id ? 'PUT' : 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body
+            });
+
+            if(res.ok) { crudModal.hide(); loadData(); } else alert('Error al guardar');
+        }
+
+        async function deleteInst(id) {
+            if(!confirm('¿Borrar?')) return;
+            const res = await fetch(`/api/instrumentos/${id}`, { method: 'DELETE' });
+            if(res.ok) loadData();
+        }
     </script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

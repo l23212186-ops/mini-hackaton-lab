@@ -1,9 +1,12 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/">🧪 Hackatón Lab</a>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto" id="main-menu">
-            </ul>
-        </div>
-    </div>
+<nav class="navbar navbar-dark bg-dark px-3">
+    <a class="navbar-brand" href="/">🧪 Sistema de Laboratorio</a>
+    <button class="btn btn-outline-light btn-sm" onclick="logout()">Cerrar Sesión</button>
 </nav>
+
+<script>
+    async function logout() {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        localStorage.removeItem('userRole');
+        window.location.href = '/login.html';
+    }
+</script>

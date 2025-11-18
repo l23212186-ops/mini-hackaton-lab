@@ -162,6 +162,7 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 // Ruta de "Verificar Sesión" (Helper)
+// Muy útil para el frontend, para saber si ya hay una sesión activa
 app.get('/api/auth/check', (req, res) => {
     if (req.session.user) {
         res.status(200).json({ logueado: true, usuario: req.session.user });
