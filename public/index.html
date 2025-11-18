@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario | Hackatón Lab</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Estilos básicos para las tablas */
+        .admin-content, .assistant-content, .auditor-content { padding-top: 20px; }
+        .data-table { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container mt-4">
+        <h1 class="mb-4">Gestión de Instrumentos de Laboratorio</h1>
+        
+        <div id="content-area">
+            <div id="admin-content" class="admin-content" style="display: none;">
+                <p class="lead">Panel de Control Total (ADMIN)</p>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <a href="#" id="register-btn" class="btn btn-success w-100">⚙️ Registrar Nuevo Usuario</a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="#" id="excel-btn" class="btn btn-info w-100">📊 Importar/Exportar Excel</a>
+                    </div>
+                </div>
+            </div>
+
+            <div id="instrument-view" style="display: none;">
+                <div class="d-flex justify-content-between mb-3">
+                    <button id="new-instrument-btn" class="btn btn-primary" style="display:none;">+ Nuevo Instrumento</button>
+                    <input type="text" id="live-search-input" class="form-control w-25" placeholder="Buscar en vivo...">
+                    <button id="excel-download-btn" class="btn btn-secondary">Descargar Reporte</button>
+                </div>
+
+                <table class="table table-striped data-table">
+                    <thead class="bg-dark text-white">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Categoría</th>
+                            <th>Estado</th>
+                            <th>Ubicación</th>
+                            <th id="actions-header" style="display:none;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="instrument-table-body">
+                        </tbody>
+                </table>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        fetch('navbar.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('navbar-container').innerHTML = data;
+            });
+    </script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userRole = localStorage.getItem('userRole');
+            const menu = document.getElementById('main-menu');
+
+            // Si no hay rol, redirigir al login
+            if (!userRole) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Lógica de Menú y Contenido visible
+            const menuItems = [
+                { nombre: 'Inventario', url: '/' },
+                { nombre: 'Cerrar Sesión', url: '#', action: 'logout' }
+            ];
+
+            menuItems.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'nav-item';
+                const a = document.createElement('a');
+                a.className = 'nav-link';
+                a.textContent = item.nombre;
+                a.href = item.url;
+                if (item.action === 'logout') {
+                    a.addEventListener('click', handleLogout);
+                }
+                li.appendChild(a);
+                menu.appendChild(li);
+            });
+
+            // Mostrar contenido según el rol
+            const contentArea = document.getElementById('content-area');
+            const instrumentView = document.getElementById('instrument-view');
+            const newInstrumentBtn = document.getElementById('new-instrument-btn');
+            const actionsHeader = document.getElementById('actions-header');
+
+            instrumentView.style.display = 'block';
+            loadInstruments(); // Cargar la tabla para todos
+
+            if (userRole === 'ADMIN') {
+                document.getElementById('admin-content').style.display = 'block';
+                newInstrumentBtn.style.display = 'block';
+                actionsHeader.style.display = 'table-cell';
+
+            } else if (userRole === 'ASISTENTE') {
+                newInstrumentBtn.style.display = 'block';
+                actionsHeader.style.display = 'table-cell';
+
+            } else if (userRole === 'AUDITOR') {
+                // Solo lectura: la tabla es suficiente
+            }
+
+            // Funciones de utilidad
+            async function handleLogout(e) {
+                e.preventDefault();
+                try {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                    localStorage.removeItem('userRole');
+                    window.location.href = '/login.html';
+                } catch (error) {
+                    alert('Error al cerrar sesión. Intente de nuevo.');
+                }
+            }
+
+            async function loadInstruments(query = '') {
+                const url = query ? `/api/instrumentos/buscar?q=${query}` : '/api/instrumentos';
+                const response = await fetch(url);
+                const instruments = await response.json();
+                
+                const tableBody = document.getElementById('instrument-table-body');
+                tableBody.innerHTML = ''; 
+
+                instruments.forEach(instrument => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = instrument.id;
+                    row.insertCell().textContent = instrument.nombre;
+                    row.insertCell().textContent = instrument.categoria;
+                    row.insertCell().textContent = instrument.estado;
+                    row.insertCell().textContent = instrument.ubicacion;
+
+                    // Columna de Acciones (CRUD)
+                    const actionsCell = row.insertCell();
+                    actionsCell.id = 'actions-cell';
+                    if (userRole === 'ADMIN' || userRole === 'ASISTENTE') {
+                        actionsCell.innerHTML = `
+                            <button class="btn btn-sm btn-warning me-2">Editar</button>
+                            <button class="btn btn-sm btn-danger" ${userRole !== 'ADMIN' ? 'disabled' : ''}>Eliminar</button>
+                        `;
+                    }
+                    if (userRole === 'ADMIN' || userRole === 'ASISTENTE') {
+                        actionsHeader.style.display = 'table-cell';
+                    }
+                });
+            }
+
+            // Lógica de Búsqueda en Vivo (Paso 70-90 min)
+            document.getElementById('live-search-input').addEventListener('keyup', (e) => {
+                loadInstruments(e.target.value);
+            });
+            
+            // Lógica de Descarga de Excel
+            document.getElementById('excel-download-btn').addEventListener('click', () => {
+                // Simplemente redirigimos para iniciar la descarga del servidor
+                window.location.href = '/api/instrumentos/download';
+            });
+        });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
