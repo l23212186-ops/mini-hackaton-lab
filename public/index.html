@@ -224,7 +224,7 @@
                 const tbody = document.getElementById('table-body');
                 tbody.innerHTML = '';
                 
-                data.forEach(i => {
+                data.forEach((i,index) => {
                     let btns = '';
                     // Botón Editar (Admin/Asistente)
                     if (role === 'ADMIN' || role === 'ASISTENTE') {
@@ -238,7 +238,7 @@
                     // Renderizar Fila
                     tbody.innerHTML += `
                         <tr>
-                            <td>${i.id}</td>
+                            <td>${index + 1}</td>
                             <td>${i.nombre}</td>
                             <td>${i.categoria}</td>
                             <td><span class="badge bg-${getStatusColor(i.estado)}">${i.estado}</span></td>
