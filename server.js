@@ -159,7 +159,7 @@ app.delete('/api/instrumentos/:id', requireLogin, requireRole(['ADMIN']), (req, 
 });
 
 // ==========================================
-// RUTAS GESTIÓN DE USUARIOS (NUEVO)
+// RUTAS GESTIÓN DE USUARIOS
 // ==========================================
 
 // VER USUARIOS
@@ -171,7 +171,7 @@ app.get('/api/usuarios', requireLogin, requireRole(['ADMIN']), (req, res) => {
     });
 });
 
-// ELIMINAR USUARIO (¡NUEVO!)
+// ELIMINAR USUARIO
 app.delete('/api/usuarios/:id', requireLogin, requireRole(['ADMIN']), (req, res) => {
     // Protección básica: No dejar que el admin se borre a sí mismo
     if (req.session.user.id == req.params.id) {
