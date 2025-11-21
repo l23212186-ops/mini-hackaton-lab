@@ -184,6 +184,37 @@ app.delete('/api/usuarios/:id', requireLogin, requireRole(['ADMIN']), (req, res)
     });
 });
 
+// EDITAR USUARIO
+app.put('/api/usuarios/:id', requireLogin, requireRole(['ADMIN']), async (req, res) => {
+    const { nombre, correo, rol, password } = req.body;
+    
+    try {
+        if (password) {
+            // Si hay contraseña nueva, hasheamos y actualizamos todo
+            const hash = await bcrypt.hash(password, 10);
+            db.query('UPDATE usuarios SET nombre=?, correo=?, rol=?, password_hash=? WHERE id=?', 
+                [nombre, correo, rol, hash, req.params.id], (err) => {
+                    if (err) return res.status(500).json({ error: 'Error BD' });
+                    res.json({ mensaje: 'Usuario actualizado con contraseña' });
+                });
+        } else {
+            // Si NO hay contraseña, actualizamos solo datos
+            db.query('UPDATE usuarios SET nombre=?, correo=?, rol=? WHERE id=?', 
+                [nombre, correo, rol, req.params.id], (err) => {
+                    if (err) return res.status(500).json({ error: 'Error BD' });
+                    res.json({ mensaje: 'Usuario actualizado' });
+                });
+        }
+    } catch (e) { res.status(500).json({ error: 'Error servidor' }); }
+});
+
+app.delete('/api/usuarios/:id', requireLogin, requireRole(['ADMIN']), (req, res) => {
+    if (req.session.user.id == req.params.id) return res.status(400).json({ error: 'No puedes borrarte a ti mismo' });
+    db.query('DELETE FROM usuarios WHERE id=?', [req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: 'Error BD' });
+        res.json({ mensaje: 'Eliminado' });
+    });
+});
 // ==========================================
 // RUTAS EXCEL
 // ==========================================

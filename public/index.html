@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario Lab</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .action-btn { margin-right: 5px; }
-    </style>
+    <style> .action-btn { margin-right: 5px; } </style>
 </head>
 <body>
     <div id="navbar-container"></div>
@@ -40,13 +38,7 @@
         <div class="table-responsive">
             <table class="table table-hover table-bordered align-middle">
                 <thead class="table-dark">
-                    <tr>
-                        <th>#</th> <th>Nombre</th>
-                        <th>Categoría</th>
-                        <th>Estado</th>
-                        <th>Ubicación</th>
-                        <th>Acciones</th>
-                    </tr>
+                    <tr><th>#</th><th>Nombre</th><th>Categoría</th><th>Estado</th><th>Ubicación</th><th>Acciones</th></tr>
                 </thead>
                 <tbody id="table-body"></tbody>
             </table>
@@ -63,14 +55,14 @@
                 <div class="modal-body">
                     <form id="crud-form">
                         <input type="hidden" id="inst-id">
-                        <div class="mb-3"><label class="form-label">Nombre</label><input type="text" id="nombre" class="form-control" required></div>
-                        <div class="mb-3"><label class="form-label">Categoría</label><input type="text" id="categoria" class="form-control" required></div>
-                        <div class="mb-3"><label class="form-label">Estado</label>
+                        <div class="mb-3"><label>Nombre</label><input type="text" id="nombre" class="form-control" required></div>
+                        <div class="mb-3"><label>Categoría</label><input type="text" id="categoria" class="form-control" required></div>
+                        <div class="mb-3"><label>Estado</label>
                             <select id="estado" class="form-select">
-                                <option value="DISPONIBLE">DISPONIBLE</option><option value="PRESTADO">PRESTADO</option><option value="MANTENIMIENTO">MANTENIMIENTO</option>
+                                <option>DISPONIBLE</option><option>PRESTADO</option><option>MANTENIMIENTO</option>
                             </select>
                         </div>
-                        <div class="mb-3"><label class="form-label">Ubicación</label><input type="text" id="ubicacion" class="form-control"></div>
+                        <div class="mb-3"><label>Ubicación</label><input type="text" id="ubicacion" class="form-control"></div>
                         <button type="submit" class="btn btn-primary w-100">Guardar</button>
                     </form>
                 </div>
@@ -82,20 +74,23 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-warning">
-                    <h5 class="modal-title text-dark">Registrar Nuevo Usuario</h5>
+                    <h5 class="modal-title text-dark" id="userModalTitle">Gestión de Usuario</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="user-form">
-                        <div class="mb-3"><label class="form-label">Nombre</label><input type="text" id="reg-nombre" class="form-control" required></div>
-                        <div class="mb-3"><label class="form-label">Correo</label><input type="email" id="reg-correo" class="form-control" required></div>
-                        <div class="mb-3"><label class="form-label">Password</label><input type="password" id="reg-password" class="form-control" required></div>
-                        <div class="mb-3"><label class="form-label">Rol</label>
+                        <input type="hidden" id="user-id"> <div class="mb-3"><label>Nombre Completo</label><input type="text" id="reg-nombre" class="form-control" required></div>
+                        <div class="mb-3"><label>Correo</label><input type="email" id="reg-correo" class="form-control" required></div>
+                        <div class="mb-3">
+                            <label>Contraseña</label>
+                            <input type="password" id="reg-password" class="form-control" placeholder="(Dejar vacío si no se cambia)">
+                        </div>
+                        <div class="mb-3"><label>Rol</label>
                             <select id="reg-rol" class="form-select">
                                 <option value="ASISTENTE">ASISTENTE</option><option value="AUDITOR">AUDITOR</option><option value="ADMIN">ADMIN</option>
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-warning w-100">Registrar Usuario</button>
+                        <button type="submit" class="btn btn-warning w-100">Guardar Usuario</button>
                     </form>
                 </div>
             </div>
@@ -111,157 +106,99 @@
                 </div>
                 <div class="modal-body">
                     <table class="table table-striped align-middle">
-                        <thead>
-                            <tr>
-                                <th>ID</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Acciones</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Acciones</th></tr></thead>
                         <tbody id="users-table-body"></tbody>
                     </table>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                </div>
+                <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
         let crudModal, userModal, usersListModal;
         const role = localStorage.getItem('userRole');
 
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Seguridad: Redirigir si no hay rol
             if (!role) { window.location.href = '/login.html'; return; }
 
-            // 2. Cargar Navbar y activar Logout
-            fetch('navbar.html')
-                .then(r => r.text())
-                .then(d => {
-                    document.getElementById('navbar-container').innerHTML = d;
-                    // Activar el botón de logout una vez cargado el HTML
-                    const btnLogout = document.getElementById('btn-logout');
-                    if (btnLogout) {
-                        btnLogout.addEventListener('click', async (e) => {
-                            e.preventDefault();
-                            try {
-                                await fetch('/api/auth/logout', { method: 'POST' });
-                                localStorage.removeItem('userRole');
-                                window.location.href = '/login.html';
-                            } catch (error) { console.error(error); }
-                        });
-                    }
-                });
-            
-            // 3. Inicializar Modales
+            fetch('navbar.html').then(r => r.text()).then(d => {
+                document.getElementById('navbar-container').innerHTML = d;
+                const btnLogout = document.getElementById('btn-logout');
+                if(btnLogout) btnLogout.onclick = async () => {
+                    await fetch('/api/auth/logout', {method:'POST'});
+                    localStorage.removeItem('userRole'); window.location.href='/login.html';
+                };
+            });
+
             crudModal = new bootstrap.Modal(document.getElementById('crudModal'));
             userModal = new bootstrap.Modal(document.getElementById('userModal'));
             usersListModal = new bootstrap.Modal(document.getElementById('usersListModal'));
 
             loadData();
 
-            // 4. Configurar Visibilidad de Botones
             document.getElementById('btn-new').style.display = 'none';
             document.getElementById('admin-buttons').classList.remove('d-inline-block'); 
             document.getElementById('upload-form').style.display = 'none';
 
-            if (role === 'ADMIN' || role === 'ASISTENTE') {
-                document.getElementById('btn-new').style.display = 'inline-block';
-            }
+            if (role === 'ADMIN' || role === 'ASISTENTE') document.getElementById('btn-new').style.display = 'inline-block';
             if (role === 'ADMIN') {
                 document.getElementById('admin-buttons').classList.remove('d-none');
                 document.getElementById('admin-buttons').classList.add('d-inline-block');
                 document.getElementById('upload-form').style.display = 'inline-block';
             }
 
-            // 5. Event Listeners
             document.getElementById('btn-new').onclick = () => openInstrumentModal();
-            document.getElementById('btn-register-user').onclick = () => userModal.show();
+            document.getElementById('btn-register-user').onclick = () => openUserModal(); // Crear Nuevo
             document.getElementById('btn-view-users').onclick = loadUsers;
             document.getElementById('btn-download').onclick = () => window.location.href = '/api/instrumentos/download';
             document.getElementById('live-search').onkeyup = (e) => loadData(e.target.value);
             
-            // Subida de Excel
             document.getElementById('excel-file').onchange = async (e) => {
                 if (!e.target.files.length) return;
-                const formData = new FormData();
-                formData.append('fileExcel', e.target.files[0]);
-                try {
-                    const res = await fetch('/api/instrumentos/upload', { method:'POST', body: formData });
-                    const data = await res.json();
-                    if(res.ok) { alert('¡Cargado! Registros: ' + data.registros); loadData(); } 
-                    else { alert('Error: ' + data.error); }
-                } catch(err) { alert('Error de conexión'); }
+                const formData = new FormData(); formData.append('fileExcel', e.target.files[0]);
+                const res = await fetch('/api/instrumentos/upload', { method:'POST', body: formData });
+                if(res.ok) { alert('Cargado'); loadData(); } else alert('Error al cargar');
                 e.target.value = '';
             };
 
-            // Formularios
             document.getElementById('crud-form').onsubmit = saveInstrument;
-            document.getElementById('user-form').onsubmit = registerUser;
+            document.getElementById('user-form').onsubmit = saveUser; // Usamos saveUser para ambos
         });
 
-        // --- FUNCIONES DE INSTRUMENTOS ---
         async function loadData(q = '') {
-            try {
-                const url = q ? `/api/instrumentos/buscar?q=${q}` : '/api/instrumentos';
-                const res = await fetch(url);
-                if (res.status === 401) { localStorage.removeItem('userRole'); window.location.href = '/login.html'; return; }
+            const res = await fetch(q ? `/api/instrumentos/buscar?q=${q}` : '/api/instrumentos');
+            if (res.status === 401) { localStorage.removeItem('userRole'); window.location.href = '/login.html'; return; }
+            const data = await res.json();
+            const tbody = document.getElementById('table-body'); tbody.innerHTML = '';
+            
+            data.forEach((i, idx) => {
+                let btns = '';
+                if (role === 'ADMIN' || role === 'ASISTENTE') btns += `<button class="btn btn-sm btn-warning action-btn" onclick='openInstrumentModal(${JSON.stringify(i)})'>✏️</button>`;
+                if (role === 'ADMIN') btns += `<button class="btn btn-sm btn-danger action-btn" onclick="deleteInst(${i.id})">🗑️</button>`;
                 
-                const data = await res.json();
-                const tbody = document.getElementById('table-body');
-                tbody.innerHTML = '';
-                
-                // Usamos 'index' para el contador visual 1, 2, 3...
-                data.forEach((i, index) => {
-                    let btns = '';
-                    if (role === 'ADMIN' || role === 'ASISTENTE') btns += `<button class="btn btn-sm btn-warning action-btn" onclick='openInstrumentModal(${JSON.stringify(i)})'>✏️</button>`;
-                    if (role === 'ADMIN') btns += `<button class="btn btn-sm btn-danger action-btn" onclick="deleteInst(${i.id})">🗑️</button>`;
-                    
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${index + 1}</td> <td>${i.nombre}</td><td>${i.categoria}</td>
-                            <td><span class="badge bg-${getStatusColor(i.estado)}">${i.estado}</span></td>
-                            <td>${i.ubicacion}</td><td>${btns}</td>
-                        </tr>`;
-                });
-            } catch (error) { console.error(error); }
+                tbody.innerHTML += `<tr><td>${idx+1}</td><td>${i.nombre}</td><td>${i.categoria}</td>
+                    <td><span class="badge bg-${getStatusColor(i.estado)}">${i.estado}</span></td><td>${i.ubicacion}</td><td>${btns}</td></tr>`;
+            });
         }
 
-        // --- FUNCIONES DE USUARIOS ---
         async function loadUsers() {
-            try {
-                const res = await fetch('/api/usuarios');
-                if (!res.ok) return alert('No autorizado');
-                const users = await res.json();
-                const tbody = document.getElementById('users-table-body');
-                tbody.innerHTML = '';
-
-                users.forEach(u => {
-                    const deleteBtn = `<button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">🗑️</button>`;
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${u.id}</td><td>${u.nombre}</td><td>${u.correo}</td>
-                            <td><span class="badge bg-info text-dark">${u.rol}</span></td>
-                            <td>${deleteBtn}</td>
-                        </tr>`;
-                });
-                usersListModal.show();
-            } catch (error) { alert('Error cargando usuarios'); }
+            const res = await fetch('/api/usuarios');
+            if (!res.ok) return alert('No autorizado');
+            const users = await res.json();
+            const tbody = document.getElementById('users-table-body'); tbody.innerHTML = '';
+            users.forEach((u, index)=> {
+                // Botones Editar y Eliminar
+                const btns = `
+                    <button class="btn btn-sm btn-warning action-btn" onclick='openUserModal(${JSON.stringify(u)})'>✏️</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">🗑️</button>
+                `;
+                tbody.innerHTML += `<tr><td>${index+1}</td><td>${u.nombre}</td><td>${u.correo}</td><td><span class="badge bg-info text-dark">${u.rol}</span></td><td>${btns}</td></tr>`;
+            });
+            usersListModal.show();
         }
 
-        async function deleteUser(id) {
-            if(!confirm('¿Estás seguro de eliminar a este usuario?')) return;
-            try {
-                const res = await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
-                const data = await res.json();
-                if (res.ok) { alert('Usuario eliminado'); loadUsers(); } 
-                else { alert('Error: ' + data.error); }
-            } catch (err) { alert('Error de conexión'); }
-        }
-
-        // --- LÓGICA DEL CRUD ---
         function openInstrumentModal(data = null) {
             document.getElementById('modalTitle').innerText = data ? 'Editar Instrumento' : 'Nuevo Instrumento';
             document.getElementById('inst-id').value = data ? data.id : '';
@@ -270,6 +207,48 @@
             document.getElementById('estado').value = data ? data.estado : 'DISPONIBLE';
             document.getElementById('ubicacion').value = data ? data.ubicacion : '';
             crudModal.show();
+        }
+
+        // --- LOGICA UNIFICADA DE USUARIOS (CREAR Y EDITAR) ---
+        function openUserModal(data = null) {
+            // Si hay data es EDICION, si no es CREACION
+            document.getElementById('userModalTitle').innerText = data ? 'Editar Usuario' : 'Registrar Nuevo Usuario';
+            document.getElementById('user-id').value = data ? data.id : '';
+            document.getElementById('reg-nombre').value = data ? data.nombre : '';
+            document.getElementById('reg-correo').value = data ? data.correo : '';
+            document.getElementById('reg-rol').value = data ? data.rol : 'ASISTENTE';
+            document.getElementById('reg-password').value = ''; // Siempre limpia la contraseña
+            // En edición, la contraseña no es obligatoria
+            document.getElementById('reg-password').required = !data; 
+            
+            // Si estamos editando, ocultamos la lista y mostramos el form
+            if(data) usersListModal.hide();
+            userModal.show();
+        }
+
+        async function saveUser(e) {
+            e.preventDefault();
+            const id = document.getElementById('user-id').value;
+            const body = JSON.stringify({
+                nombre: document.getElementById('reg-nombre').value,
+                correo: document.getElementById('reg-correo').value,
+                password: document.getElementById('reg-password').value,
+                rol: document.getElementById('reg-rol').value
+            });
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/usuarios/${id}` : '/api/auth/register';
+
+            const res = await fetch(url, { method: method, headers: {'Content-Type': 'application/json'}, body });
+            const data = await res.json();
+
+            if (res.ok) {
+                alert(id ? 'Usuario actualizado' : 'Usuario registrado');
+                userModal.hide();
+                if(id) loadUsers(); // Si editamos, recargamos la lista
+            } else {
+                alert('Error: ' + data.error);
+            }
         }
 
         async function saveInstrument(e) {
@@ -290,28 +269,16 @@
         async function deleteInst(id) {
             if(!confirm('¿Borrar?')) return;
             const res = await fetch(`/api/instrumentos/${id}`, { method: 'DELETE' });
-            if(res.ok) loadData();
+            if(res.ok) loadData(); else alert('Error al borrar');
         }
 
-        async function registerUser(e) {
-            e.preventDefault();
-            const body = JSON.stringify({
-                nombre: document.getElementById('reg-nombre').value,
-                correo: document.getElementById('reg-correo').value,
-                password: document.getElementById('reg-password').value,
-                rol: document.getElementById('reg-rol').value
-            });
-            const res = await fetch('/api/auth/register', {
-                method: 'POST', headers: {'Content-Type': 'application/json'}, body
-            });
-            const data = await res.json();
-            if (res.ok) { alert('Registrado'); userModal.hide(); document.getElementById('user-form').reset(); } 
-            else { alert('Error: ' + data.error); }
+        async function deleteUser(id) {
+            if(!confirm('¿Eliminar usuario?')) return;
+            const res = await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
+            if(res.ok) loadUsers(); else alert('Error al borrar usuario');
         }
 
-        function getStatusColor(estado) {
-            return estado === 'DISPONIBLE' ? 'success' : (estado === 'PRESTADO' ? 'warning' : 'danger');
-        }
+        function getStatusColor(s) { return s==='DISPONIBLE'?'success':(s==='PRESTADO'?'warning':'danger'); }
     </script>
 </body>
 </html>
